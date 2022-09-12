@@ -19,6 +19,16 @@ int main( void )
 	
 	
 	
+	//Test the _threadsCore library
+	//Print the value of the initial MSP
+	
+	
+	//Create new thread stack 512 bytes below the value of the MSP and set the processor to use it
+	
+	
+	//Test the interrupt code
+	//Call kernelInit and osSched before the infinite while loop
+	
 	
 	
 	//Your code should always terminate in an endless loop if it is done. If you don't
