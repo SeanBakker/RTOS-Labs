@@ -5,6 +5,9 @@
  *----------------------------------------------------------------------------
 */
 
+//This file is for integer definitions
+#include "stdint.h"
+
 //Define System Handler Priority Register 3 for the location of the PendSV priority register
 #define SHPR3 *(uint32_t*)0xE000ED20
 

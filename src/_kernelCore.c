@@ -5,6 +5,11 @@
  *----------------------------------------------------------------------------
 */
 
+//Include guards for _kernelCore.h file
+#ifndef _kernelCore
+#include "_kernelCore.h"
+#endif
+
 //Initializes memory structures and interrupts necessary to run the kernel
 void kernelInit(void)
 {
