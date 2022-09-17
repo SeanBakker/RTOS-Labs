@@ -1,15 +1,20 @@
 /*----------------------------------------------------------------------------
- * Name:    _threadsCore.h
- * Purpose: 
- * Version: V1.00
+ * Name: _threadsCore.h
+ * Purpose: Library used to create the stacks for multi-threading
  *----------------------------------------------------------------------------
 */
  
+//Include guards for _threadsCore
+#ifndef _threadsCore
 //This file contains relevant pin and other settings, such as register access functions
 #include <LPC17xx.h>
 
+//This file is for printf and other IO functions (used for debugging when needed)
+#include "stdio.h"
+
 //This file is for integer definitions
 #include "stdint.h" 
+#endif
 
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void);
