@@ -9,6 +9,9 @@
 #include "_threadsCore.h"
 #endif
 
+//Global variable for number of stacks created
+uint32_t numStacks = 0;
+
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void)
 {
@@ -36,9 +39,13 @@ uint32_t* getNewThreadStack(uint32_t offset)
 		newThreadStack -= sizeof(uint32_t);
 	}
 	
-	//Confirm the size of the thread stack is not larger than the maximum stack size (0x2000 = 8192 in decimal)
-	if (offset <= 8192)
+	//Confirm the size of all thread stacks will not be larger than the maximum stack size (0x2000 = 8192 in decimal)
+	uint32_t maxStackSize = 8192;
+	if (maxStackSize >= (numStacks + 1)*offset)
 	{
+		//Increment the number of stacks allocated
+		numStacks++;
+		
 		//Return the thread stack pointer
 		return (uint32_t *)newThreadStack;
 	}
