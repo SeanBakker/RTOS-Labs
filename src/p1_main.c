@@ -1,17 +1,15 @@
-//This file contains relevant pin and other settings 
-#include <LPC17xx.h>
-
-//This file is for printf and other IO functions
-#include "stdio.h"
-
 //This file sets up the UART
 #include "uart.h"
 
-//This file sets up the ThreadsCore library
+//Include guards for _threadsCore
+#ifndef _threadsCore
 #include "_threadsCore.h"
+#endif
 
-//This file sets up the KernelCore library
+//Include guards for _kernelCore
+#ifndef _kernelCore
 #include "_kernelCore.h"
+#endif
 
 //This is C. The expected function heading is int main(void)
 int main(void) 

@@ -26,3 +26,12 @@ void osSched(void)
 	//Clear the pipeline before triggering an interrupt
 	__asm("isb");
 }
+
+//Switch tasks
+int task_switch(void){
+	//set the new PSP
+	//__set_PSP((uint32_t)osThreads[osCurrentTask].taskStack);
+	return 1; //You are free to use this return value in your
+	//assembly eventually. It will be placed in r0, so be sure to
+	//access it before overwriting r0
+}

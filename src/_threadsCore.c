@@ -9,8 +9,29 @@
 #include "_threadsCore.h"
 #endif
 
-//Global variable for number of stacks created
+//Set the number of stacks created to 0 initially
 uint32_t numStacks = 0;
+
+//Set the index of the current thread to 0 initially
+uint32_t threadIndex = 0;
+
+//Thread struct for each thread stored
+struct thread_struct
+{
+	//threadStack pointer
+	uint32_t* threadStack;
+	
+	//Thread function pointer
+	void (*threadFunc)(void* args);
+	
+	//Store other information in a thread struct?
+	//possibly store threadIndex for the array?
+	//any other registers?
+	
+}rtosThread;
+
+//Thread struct array
+struct thread_struct osThreads[MAX_THREADS];
 
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void)
@@ -65,4 +86,19 @@ void setThreadingWithPSP(uint32_t* threadStack)
 	
 	//Switch to threading mode by setting the CONTROL, which involves shifting a 1 into its 1st bit
 	__set_CONTROL(1<<1);
+}
+
+//
+void create_thread(void)
+{
+	//Create a new thread struct
+	//rtosThread.threadStack
+	struct thread_struct newThread;
+	//newThread.threadStack = 
+	
+	//Add the new thread struct to the static array of threads
+	//could loop through the array and find the next empty location for the next thread
+	//or we can stored the last index somehow
+	
+	
 }
