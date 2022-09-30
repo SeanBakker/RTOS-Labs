@@ -1,15 +1,43 @@
 //This file sets up the UART
 #include "uart.h"
 
-//Include guards for _threadsCore
-#ifndef _threadsCore
+//Include header file for _threadsCore
 #include "_threadsCore.h"
-#endif
 
-//Include guards for _kernelCore
-#ifndef _kernelCore
+//Include header file for _kernelCore
 #include "_kernelCore.h"
-#endif
+
+int x = 0;
+int y = 0;
+
+void task1(void* args)
+{
+	while (1)
+	{
+		x++;
+		printf("In task 1. x is: %d\n", x);
+		osSched();
+	}
+}
+
+void task2(void* args)
+{
+	while (1)
+	{
+		y++;
+		printf("In task 2. y is: %d\n", y);
+		osSched();
+	}
+}
+
+void osIdleTask(void* args)
+{
+	while (1)
+	{
+		printf("In task 0\n");
+		osSched();
+	}
+}
 
 //This is C. The expected function heading is int main(void)
 int main(void) 
@@ -27,9 +55,16 @@ int main(void)
 	setThreadingWithPSP(getNewThreadStack(512));
 	
 	//Test the interrupt code
-	//Call kernelInit and osSched before the infinite while loop
+	//Call kernelInit before the infinite while loop
 	kernelInit();
-	osSched();
+	
+	//Setup threads
+	create_thread(osIdleTask);
+	create_thread(task1);
+	create_thread(task2);
+	
+	//Start the kernel
+	kernel_start();
 	
 	//Your code should always terminate in an endless loop if it is done. If you don't
 	//the processor will enter a hardfault and will be weird

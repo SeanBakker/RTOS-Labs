@@ -5,9 +5,10 @@
 */
 
 //Include guards for _kernelCore
-#ifndef osDefs
+#ifndef _kernelCore
+#define _kernelCore
+
 #include "osDefs.h"
-#endif
 
 //Initializes memory structures and interrupts necessary to run the kernel
 void kernelInit(void);
@@ -23,3 +24,5 @@ void kernel_start(void);
 
 //Switch tasks
 int task_switch(void);
+
+#endif

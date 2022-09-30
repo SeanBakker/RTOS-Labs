@@ -4,10 +4,11 @@
  *----------------------------------------------------------------------------
 */
  
-//Include guards for _threadsCore
-#ifndef _threadsCore
+//Include header file for _threadsCore
 #include "_threadsCore.h"
-#endif
+
+//Thread struct array
+extern struct thread_struct osThreads[MAX_THREADS];
 
 //Set the number of stacks created to 0 initially
 uint32_t numStacks = 0;
@@ -15,23 +16,8 @@ uint32_t numStacks = 0;
 //Set the index of the current thread to 0 initially
 uint32_t threadIndex = 0;
 
-//Thread struct for each thread stored
-struct thread_struct
-{
-	//threadStack pointer
-	uint32_t* threadStack;
-	
-	//Thread function pointer
-	void (*threadFunc)(void* args);
-	
-	//Store other information in a thread struct?
-	//possibly store threadIndex for the array?
-	//any other registers?
-	
-}rtosThread;
-
-//Thread struct array
-struct thread_struct osThreads[MAX_THREADS];
+//Set the number of total threads
+uint32_t num_threads = 0;
 
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void)
@@ -54,10 +40,10 @@ uint32_t* getNewThreadStack(uint32_t offset)
 	
 	//Check if the stack pointer is not divisible by 8 (internal ARM specification)
 	//The stack pointer must lie on an 8-byte boundary
-	if (newThreadStack % 8 != 0)
+	if (newThreadStack % EIGHT_BYTE_ALIGN != 0)
 	{
-		//Decrement the thread stack pointer by 4 (size of uint32_t)
-		newThreadStack -= sizeof(uint32_t);
+		//Decrement the thread stack pointer by 4 (FOUR_BYTE_ALIGN)
+		newThreadStack -= FOUR_BYTE_ALIGN;
 	}
 	
 	//Confirm the size of all thread stacks will not be larger than the maximum stack size (0x2000 = 8192 in decimal)
@@ -88,17 +74,42 @@ void setThreadingWithPSP(uint32_t* threadStack)
 	__set_CONTROL(1<<1);
 }
 
-//
-void create_thread(void)
+//Creates one single thread
+void create_thread(void (*func)(void* args))
 {
-	//Create a new thread struct
-	//rtosThread.threadStack
-	struct thread_struct newThread;
-	//newThread.threadStack = 
-	
-	//Add the new thread struct to the static array of threads
-	//could loop through the array and find the next empty location for the next thread
-	//or we can stored the last index somehow
+	//Check to make sure there is room to create the thread
+	//max stack size is the offset 512, we need to make sure the thread size will fit into this offset
+	//thread size we set?
 	
 	
+	
+	//Set 24th bit of the SP
+	*--(osThreads[threadIndex].threadStack) = 1<<24;
+	
+	//Store the PC
+	*--(osThreads[threadIndex].threadStack) = (uint32_t)osThreads[threadIndex].threadFunc; //threadFunc is a function pointer
+	
+	//Store the next registers LR, R12, R3, R2, R1, R0
+	for (uint32_t i = 0xE; i > 0x8; i--) 
+	{
+		printf("%x \n", i);
+		*--(osThreads[threadIndex].threadStack) = i;
+	}
+	
+	//Store the next registers R11 through R4
+	for (uint32_t i = 0xB; i > 0x3; i--) 
+	{
+		printf("%x \n", i);
+		*--(osThreads[threadIndex].threadStack) = i;
+	}
+	
+	//Store the function pointer for the thread
+	osThreads[threadIndex].threadFunc = func;
+	
+	//Increment the thread index and number of threads
+	threadIndex++;
+	num_threads++;
 }
+
+
+//Run the next thread in sequential order (index+1)?
