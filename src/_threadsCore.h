@@ -10,17 +10,18 @@
 
 #include "osDefs.h"
 
+//Define stack alignment constants
+#define EIGHT_BYTE_ALIGN 8
+#define FOUR_BYTE_ALIGN 4
+
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void);
 
 //Returns the address of a new PSP with offset of "offset" bytes from MSP
 uint32_t* getNewThreadStack(uint32_t offset);
 
-//Sets the value of PSP to threadStack and ensures that the microcontroller is using that value by changing the CONTROL register
-void setThreadingWithPSP(uint32_t* threadStack);
-
-//Create a new thread
-void create_thread(void (*func)(void* args));
+//Creates one single thread, returns the thread ID or -1 if the thread cannot be created
+int create_thread(void (*func)(void* args));
 
 //Thread function
 typedef void *threadFunc(void);

@@ -16,13 +16,13 @@ void kernelInit(void);
 //Called by the kernel to schedule which threads to run
 void osSched(void);
 
-//Initialize the kernel
-void kernel_Initialize(void);
+//Sets the value of PSP to threadStack and ensures that the microcontroller is using that value by changing the CONTROL register
+void setThreadingWithPSP(uint32_t* threadStack);
 
-//Start the kernel
-void kernel_start(void);
+//Start the kernel, returns false if no threads have been created
+bool kernel_start(void);
 
-//Switch tasks
+//Helper function to switch tasks and switch the PSP instead of using assembly
 int task_switch(void);
 
 #endif

@@ -49,10 +49,7 @@ int main(void)
 	//Test the _threadsCore library
 	//Print the value of the initial MSP location
 	uint32_t* msp = getMSPInitialLocation();
-	printf("%x\n", (uint32_t)msp);
-	
-	//Create a new thread stack 512 bytes below the value of the MSP and set the processor to use it
-	setThreadingWithPSP(getNewThreadStack(512));
+	printf("Initial MSP Location: %x\n", (uint32_t)msp);
 	
 	//Test the interrupt code
 	//Call kernelInit before the infinite while loop
