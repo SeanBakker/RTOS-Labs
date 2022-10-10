@@ -21,7 +21,7 @@
 #define ICSR *(uint32_t*)0xE000ED04
 
 //Define stack sizes
-#define MSR_STACK_SIZE 0x400
+#define MSR_STACK_SIZE 0x400 //Size of the model-specific registers (MSR) reserved memory
 #define THREAD_STACK_SIZE 0x200 //Max thread size offset is 512 = 0x200
 
 //Define maximum number of threads

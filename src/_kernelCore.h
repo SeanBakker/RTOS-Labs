@@ -22,7 +22,7 @@ void setThreadingWithPSP(uint32_t* threadStack);
 //Start the kernel, returns false if no threads have been created
 bool kernel_start(void);
 
-//Helper function to switch tasks and switch the PSP instead of using assembly
-int task_switch(void);
+//Helper function to switch threads and switch the PSP instead of using assembly
+int thread_switch(void);
 
 #endif

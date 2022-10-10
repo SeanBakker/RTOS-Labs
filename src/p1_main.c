@@ -7,35 +7,55 @@
 //Include header file for _kernelCore
 #include "_kernelCore.h"
 
+//Variables for threads to test that they are working
 int x = 0;
 int y = 0;
+int z = 0;
 
-void task1(void* args)
+//Thread 1
+void thread1(void* args)
 {
+	//Infinite loop for the thread
 	while (1)
 	{
 		x++;
-		printf("In task 1. x is: %d\n", x);
-		osSched();
+		printf("In thread 1. x is: %d\n", x);
+		osSched(); //Call the scheduler 
 	}
 }
 
-void task2(void* args)
+//Thread 2
+void thread2(void* args)
 {
+	//Infinite loop for the thread
 	while (1)
 	{
 		y++;
-		printf("In task 2. y is: %d\n", y);
-		osSched();
+		printf("In thread 2. y is: %d\n", y);
+		osSched(); //Call the scheduler 
 	}
 }
 
-void osIdleTask(void* args)
+//Thread 3
+void thread3(void* args)
 {
+	//Infinite loop for the thread
 	while (1)
 	{
-		printf("In task 0\n");
-		osSched();
+		z++;
+		printf("In thread 3. z is: %d\n", x);
+		osSched(); //Call the scheduler 
+	}
+}
+
+//Idle thread when no other thread is running
+void osIdleThread(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		printf("In thread 0\n");
+		osSched(); //Call the scheduler 
 	}
 }
 
@@ -56,9 +76,10 @@ int main(void)
 	kernelInit();
 	
 	//Setup threads
-	create_thread(osIdleTask);
-	create_thread(task1);
-	create_thread(task2);
+	create_thread(osIdleThread);
+	create_thread(thread1);
+	create_thread(thread2);
+	create_thread(thread3);
 	
 	//Start the kernel
 	kernel_start();

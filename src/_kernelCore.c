@@ -10,8 +10,9 @@
 
 rtosThread osThreads[MAX_THREADS]; //Static thread struct array
 int runningThread = 0; //Current running thread index
-extern int num_threads; //Number of threads created
 uint32_t mspAddress; //Store the address of the MSP location
+
+extern int num_threads; //Number of threads created
 
 //Initializes memory structures and interrupts necessary to run the kernel
 void kernelInit(void)
@@ -82,7 +83,7 @@ bool kernel_start(void)
 }
 
 //Switch tasks
-int task_switch(void){
+int thread_switch(void){
 	//Set the new PSP for the context switch
 	__set_PSP((uint32_t)osThreads[runningThread].threadStack);
 	return 1; //Return value can be used in assembly in r0
