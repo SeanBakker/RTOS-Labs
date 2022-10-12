@@ -47,7 +47,7 @@ uint32_t* getNewThreadStack(uint32_t offset)
 	}
 	
 	//Confirm the size of all thread stacks will not be larger than the maximum stack size
-	if (maxStackSize >= (numStacks + 1)*offset)
+	if (maxStackSize >= (numStacks + 1)*offset + MSR_STACK_SIZE)
 	{
 		//Increment the number of stacks allocated
 		numStacks++;
