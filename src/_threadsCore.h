@@ -23,7 +23,7 @@ uint32_t* getNewThreadStack(uint32_t offset);
 //Creates one single thread, returns the thread ID or -1 if the thread cannot be created
 int create_thread(void (*func)(void* args));
 
-//Thread function
+//Thread function type
 typedef void *threadFunc(void);
 
 #endif

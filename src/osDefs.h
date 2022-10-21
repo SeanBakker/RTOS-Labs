@@ -23,6 +23,7 @@
 //Define stack sizes
 #define MSR_STACK_SIZE 0x400 //Size of the model-specific registers (MSR) reserved memory
 #define THREAD_STACK_SIZE 0x200 //Max thread size offset is 512 = 0x200
+#define MAX_STACK_SIZE 0x2000 //Set the maximum stack size (0x2000)
 
 //Define maximum number of threads
 #define MAX_THREADS 10

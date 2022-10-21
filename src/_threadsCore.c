@@ -9,7 +9,6 @@
 
 int numStacks = 0; //Set the number of stacks created to 0 initially
 int num_threads = 0; //Set the number of total threads
-uint32_t maxStackSize = 8192; //Set the maximum stack size (0x2000 = 8192 in decimal)
 
 extern rtosThread osThreads[MAX_THREADS]; //Thread struct array
 extern int runningThread; //Current running thread index
@@ -18,15 +17,8 @@ extern uint32_t mspAddress; //Store the address of the MSP location
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void)
 {
-	//MSP location is stored at address 0x00 in the vector table
-	uint32_t* msp = 0;
-	//*msp = 0x10004150;
-	//printf("MSP: %x\n", *msp);
-	//__set_MSP((uint32_t)0x10004150);
-	//printf("MSP: %x\n", *msp);
-	
-	//Return address of where MSP is stored
-	return (uint32_t *) *msp;
+	uint32_t* msp = 0; //MSP location is stored at address 0x00 in the vector table
+	return (uint32_t *) *msp; //Return address of where MSP is stored
 }
 
 //Returns the address of a new PSP with an offset of "offset" bytes from MSP
@@ -35,8 +27,7 @@ uint32_t* getNewThreadStack(uint32_t offset)
 	//Set the newThreadStack address to initially be the MSP location
 	uint32_t newThreadStack = (uint32_t)getMSPInitialLocation();
 	
-	//Decrement the address by the offset
-	newThreadStack -= offset;
+	newThreadStack -= offset; //Decrement the address by the offset
 	
 	//Check if the stack pointer is not divisible by 8 (internal ARM specification)
 	//The stack pointer must lie on an 8-byte boundary
@@ -47,33 +38,31 @@ uint32_t* getNewThreadStack(uint32_t offset)
 	}
 	
 	//Confirm the size of all thread stacks will not be larger than the maximum stack size
-	if (maxStackSize >= (numStacks + 1)*offset + MSR_STACK_SIZE)
+	if (MAX_STACK_SIZE >= (numStacks + 1)*THREAD_STACK_SIZE + MSR_STACK_SIZE)
 	{
-		//Increment the number of stacks allocated
-		numStacks++;
-		
-		//Return the thread stack pointer
-		return (uint32_t *)newThreadStack;
+		numStacks++; //Increment the number of stacks allocated
+		return (uint32_t *)newThreadStack; //Return the thread stack pointer
 	}
 	else 
 	{
 		//If the stack exceeds the allowable size an error is displayed
 		printf("Error: Size of the stack is larger than the maximum");
-		return 0;
+		return 0; //Return 0 when there is an error
 	}
 }
 
 //Creates one single thread, returns the thread ID or -1 if the thread cannot be created
 int create_thread(void (*func)(void* args))
-{	
+{
+	//Get the new thread stack pointer location
+	uint32_t* newThreadStack = getNewThreadStack(MSR_STACK_SIZE + (num_threads*THREAD_STACK_SIZE));
+	
 	//Check the number of threads does not exceed the maximum
-	if (num_threads < MAX_THREADS)
+	if (num_threads < MAX_THREADS && newThreadStack != 0)
 	{		
 		osThreads[num_threads].status = CREATED; //Set the status of the thread
 		osThreads[num_threads].threadFunc = func; //Store the function pointer for the thread
-		osThreads[num_threads].threadStack = getNewThreadStack(MSR_STACK_SIZE + (num_threads*THREAD_STACK_SIZE)); //Store the stack pointer location for this thread stack pointer
-		
-		printf("%x \n", (uint32_t)osThreads[num_threads].threadStack);
+		osThreads[num_threads].threadStack = newThreadStack; //Store the stack pointer location for this thread stack pointer
 		
 		//Setup the stack for the new thread
 		//Set 24th bit of the SP, this sets xpsr (status register)
@@ -96,12 +85,8 @@ int create_thread(void (*func)(void* args))
 			*(--osThreads[num_threads].threadStack) = i;
 		}
 		
-		//Increment the number of threads
-		num_threads++;
-		
-		//Return the thread index (position of the thread in the array)
-		return num_threads - 1;
+		num_threads++; //Increment the number of threads
+		return num_threads - 1; //Return the thread index (position of the thread in the array)
 	}
-	//Return -1 if the thread cannot be created
-	return -1;
+	return -1; //Return -1 if the thread cannot be created
 }

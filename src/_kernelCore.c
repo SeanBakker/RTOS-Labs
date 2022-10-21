@@ -38,10 +38,9 @@ void osSched(void)
 		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - (16*4)); 
 	}
 	
-	//Loop through the threads 
-	runningThread++;
+	runningThread++; //Loop through the threads 
 	
-	//Reset the runningThread back to the first thread after it has looped through all of the threads
+	//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
 	if (runningThread == num_threads)
 	{
 		runningThread = 0;
@@ -71,6 +70,7 @@ void setThreadingWithPSP(uint32_t* threadStack)
 //Start the kernel
 bool kernel_start(void)
 {
+	//Check if any threads have been created
 	if (num_threads > 0)
 	{
 		//Initialization for the first thread before it starts running
@@ -78,11 +78,10 @@ bool kernel_start(void)
 		setThreadingWithPSP(osThreads[0].threadStack); //Set thread mode and SP to PSP by calling setThreadingWithPSP function
 		osSched();
 	}
-	//Return false when no threads have been created, or an error occurred
-	return 0;
+	return 0; //Return false when no threads have been created, or an error occurred
 }
 
-//Switch tasks
+//Switch between threads
 int thread_switch(void){
 	//Set the new PSP for the context switch
 	__set_PSP((uint32_t)osThreads[runningThread].threadStack);
