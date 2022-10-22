@@ -82,7 +82,8 @@ bool kernel_start(void)
 }
 
 //Switch between threads
-int thread_switch(void){
+int thread_switch(void)
+{
 	//Set the new PSP for the context switch
 	__set_PSP((uint32_t)osThreads[runningThread].threadStack);
 	return 1; //Return value can be used in assembly in r0
