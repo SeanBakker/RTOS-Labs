@@ -57,7 +57,7 @@ int create_thread(void (*func)(void* args))
 	//Get the new thread stack pointer location
 	uint32_t* newThreadStack = getNewThreadStack(MSR_STACK_SIZE + (num_threads*THREAD_STACK_SIZE));
 	
-	//Check the number of threads does not exceed the maximum
+	//Check the number of threads does not exceed the maximum and that the new thread stack pointer is a valid address
 	if (num_threads < MAX_THREADS && newThreadStack != 0)
 	{		
 		osThreads[num_threads].status = CREATED; //Set the status of the thread
