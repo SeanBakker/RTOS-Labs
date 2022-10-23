@@ -66,13 +66,11 @@ int main(void)
 	//you may see some weird behaviour
 	SystemInit();
 	
-	//Test the _threadsCore library
 	//Print the value of the initial MSP location
 	uint32_t* msp = getMSPInitialLocation();
 	printf("\nInitial MSP Location: %x\n", (uint32_t)msp);
 	
-	//Test the interrupt code
-	//Call kernelInit before the infinite while loop
+	//Call kernelInit to initialize the kernel
 	kernelInit();
 	
 	//Setup threads
