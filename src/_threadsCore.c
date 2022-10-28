@@ -57,12 +57,13 @@ int create_thread(void (*func)(void* args))
 	//Get the new thread stack pointer location
 	uint32_t* newThreadStack = getNewThreadStack(MSR_STACK_SIZE + (num_threads*THREAD_STACK_SIZE));
 	
-	//Check the number of threads does not exceed the maximum and that the new thread stack pointer is a valid address
+	//Check the number of threads does not exceed the maximum
 	if (num_threads < MAX_THREADS && newThreadStack != 0)
 	{		
 		osThreads[num_threads].status = CREATED; //Set the status of the thread
 		osThreads[num_threads].threadFunc = func; //Store the function pointer for the thread
 		osThreads[num_threads].threadStack = newThreadStack; //Store the stack pointer location for this thread stack pointer
+		osThreads[num_threads].timer = TIMESLICE; //Set the timeslice for the thread
 		
 		//Setup the stack for the new thread
 		//Set 24th bit of the SP, this sets xpsr (status register)

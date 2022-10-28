@@ -12,7 +12,10 @@ int x = 0;
 int y = 0;
 int z = 0;
 
-//Thread 1
+
+//Test Cases #1
+/*
+//Thread 1 (yields after running)
 void thread1(void* args)
 {
 	//Infinite loop for the thread
@@ -20,11 +23,11 @@ void thread1(void* args)
 	{
 		x++;
 		printf("In thread 1. x is: %d\n", x);
-		osSched(); //Call the scheduler 
+		osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler 
 	}
 }
 
-//Thread 2
+//Thread 2 (sleeps after running)
 void thread2(void* args)
 {
 	//Infinite loop for the thread
@@ -32,11 +35,11 @@ void thread2(void* args)
 	{
 		y++;
 		printf("In thread 2. y is: %d\n", y);
-		osSched(); //Call the scheduler 
+		osSleep(100); //Sleep for 100ms
 	}
 }
 
-//Thread 3
+//Thread 3 (doesn't yield or sleep)
 void thread3(void* args)
 {
 	//Infinite loop for the thread
@@ -44,18 +47,44 @@ void thread3(void* args)
 	{
 		z++;
 		printf("In thread 3. z is: %d\n", x);
-		osSched(); //Call the scheduler 
 	}
 }
+*/
 
-//Idle thread when no other thread is running
-void osIdleThread(void* args)
+//Test Cases #2
+//Thread 1 (yields after running)
+void thread1(void* args)
 {
 	//Infinite loop for the thread
 	while (1)
 	{
-		printf("In thread 0\n");
-		osSched(); //Call the scheduler 
+		x++;
+		printf("In thread 1. x is: %d\n", x);
+		osSleep(3); //Sleep for 3ms
+	}
+}
+
+//Thread 2 (sleeps after running)
+void thread2(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		y++;
+		printf("In thread 2. y is: %d\n", y);
+		osSleep(7); //Sleep for 7ms
+	}
+}
+
+//Thread 3 (doesn't yield or sleep)
+void thread3(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		z++;
+		printf("In thread 3. z is: %d\n", x);
+		osSleep(17); //Sleep for 17ms
 	}
 }
 
@@ -66,15 +95,16 @@ int main(void)
 	//you may see some weird behaviour
 	SystemInit();
 	
+	//Test the _threadsCore library
 	//Print the value of the initial MSP location
 	uint32_t* msp = getMSPInitialLocation();
 	printf("\nInitial MSP Location: %x\n", (uint32_t)msp);
 	
-	//Call kernelInit to initialize the kernel
+	//Test the interrupt code
+	//Call kernelInit before the infinite while loop
 	kernelInit();
 	
 	//Setup threads
-	create_thread(osIdleThread);
 	create_thread(thread1);
 	create_thread(thread2);
 	create_thread(thread3);

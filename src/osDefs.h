@@ -25,13 +25,22 @@
 #define THREAD_STACK_SIZE 0x200 //Max thread size offset is 512 = 0x200
 #define MAX_STACK_SIZE 0x2000 //Set the maximum stack size (0x2000)
 
+//Stack alignment constants for context switching
+#define SIXTEEN_BYTE_OFFSET 16*4 //Stack PSP offset for PendSV interrupt
+#define EIGHT_BYTE_OFFSET 8*4 //Stack PSP offset for tail-chained interrupts
+
 //Define maximum number of threads
-#define MAX_THREADS 10
+//10 threads for the user + the idle thread
+#define MAX_THREADS 11
 
 //Thread states
 #define CREATED 0 //Thread is created
 #define RUNNING 1 //Active thread is running
 #define WAITING 2 //Thread is waiting to be run
+#define SLEEPING 3 //Thread is sleeping for a specified time after running
+
+//Timer constants for the threads
+#define TIMESLICE 5 //Timeslice (how long threads run) is 5ms
 
 //Define thread struct for each thread stored
 typedef struct thread_struct
@@ -39,6 +48,7 @@ typedef struct thread_struct
 	uint32_t* threadStack; //Thread stack pointer
 	void (*threadFunc)(void* args); //Thread function pointer
 	int status; //Status of the thread (Running/Waiting/Blocked)
+	int timer; //Timer for the thread
 }rtosThread;
 
 #endif
