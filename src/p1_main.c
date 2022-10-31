@@ -12,9 +12,7 @@ int x = 0;
 int y = 0;
 int z = 0;
 
-
 //Test Cases #1
-/*
 //Thread 1 (yields after running)
 void thread1(void* args)
 {
@@ -35,7 +33,7 @@ void thread2(void* args)
 	{
 		y++;
 		printf("In thread 2. y is: %d\n", y);
-		osSleep(100); //Sleep for 100ms
+		osSleep(20); //Sleep for 20ms
 	}
 }
 
@@ -49,10 +47,10 @@ void thread3(void* args)
 		printf("In thread 3. z is: %d\n", x);
 	}
 }
-*/
 
+/*
 //Test Cases #2
-//Thread 1 (yields after running)
+//Thread 1 (sleeps 3ms after running)
 void thread1(void* args)
 {
 	//Infinite loop for the thread
@@ -64,7 +62,7 @@ void thread1(void* args)
 	}
 }
 
-//Thread 2 (sleeps after running)
+//Thread 2 (sleeps 7ms after running)
 void thread2(void* args)
 {
 	//Infinite loop for the thread
@@ -76,7 +74,7 @@ void thread2(void* args)
 	}
 }
 
-//Thread 3 (doesn't yield or sleep)
+//Thread 3 (sleeps 17ms after running)
 void thread3(void* args)
 {
 	//Infinite loop for the thread
@@ -87,6 +85,7 @@ void thread3(void* args)
 		osSleep(17); //Sleep for 17ms
 	}
 }
+*/
 
 //This is C. The expected function heading is int main(void)
 int main(void) 

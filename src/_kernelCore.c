@@ -11,6 +11,7 @@
 rtosThread osThreads[MAX_THREADS]; //Static thread struct array
 int runningThread = 0; //Current running thread index
 uint32_t mspAddress; //Store the address of the MSP location
+bool accessResources = true; //Mutual exclusion Boolean variable
 
 extern int num_threads; //Number of threads created
 
@@ -27,12 +28,15 @@ void kernelInit(void)
 //Called by the kernel to schedule which threads to run
 void osSched(uint32_t PSP_Offset)
 {
+	accessResources = false; //Resources are not available after yielding
+	
 	//Check to make sure there is a thread currently running
 	if (runningThread >= 0)
 	{
+		//Sleeping threads are handled by the SysTick handler so their state should not be changed here after a context switch
 		if (osThreads[runningThread].status != SLEEPING)
 		{
-			osThreads[runningThread].status = WAITING; //Set the current thread as ready but not running yet
+			osThreads[runningThread].status = WAITING; //Set the current thread as waiting but not running yet
 		}
 		
 		//Set the thread stack pointer to the PSP
@@ -50,9 +54,10 @@ void osSched(uint32_t PSP_Offset)
 		runningThread = 0;
 	}
 	
+	//Loop through the thread struct array when the next runningThread index is a sleeping thread
 	while(osThreads[runningThread].status == SLEEPING)
 	{
-		runningThread++; //Loop through the threads 
+		runningThread++; //Increment the index to loop through the threads 
 		
 		//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
 		if (runningThread >= num_threads - 1)
@@ -60,6 +65,7 @@ void osSched(uint32_t PSP_Offset)
 			runningThread = 0;
 		}
 		
+		//After looping through all of the threads, if they are all sleeping then run the idle thread
 		if (runningThread == previousActiveThread + 1)
 		{
 			runningThread = num_threads - 1; //Set the running thread to be the idle thread
@@ -69,13 +75,14 @@ void osSched(uint32_t PSP_Offset)
 	//Set the thread to be in the running state
 	osThreads[runningThread].status = RUNNING;
 	
-	//Context switch
-	osYield();
+	osYield(); //Context switch
 }
 
 //Call PendSV interrupt to context switch
 void osYield(void)
 {
+	accessResources = true; //Resources are available again
+	
 	//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
 	//Bit 28 of this register controls the behaviour of PendSV 
 	ICSR |= 1<<28;
@@ -106,11 +113,9 @@ void osSleep(int sleepTime)
 //Start the kernel
 bool kernel_start(void)
 {
-	//Create the idle thread
-	create_thread(osIdleThread);
+	create_thread(osIdleThread); //Create the idle thread
 	
-	//Configure the SysTick timer
-	SysTick_Config(SystemCoreClock/1000);
+	SysTick_Config(SystemCoreClock/1000); //Configure the SysTick timer
 	
 	//Check if any threads have been created
 	if (num_threads > 0)
@@ -118,7 +123,7 @@ bool kernel_start(void)
 		//Initialization for the first thread before it starts running
 		runningThread = -1; //No threads currently running, the thread at index 0 will run first when running the scheduler 
 		setThreadingWithPSP(osThreads[0].threadStack); //Set thread mode and SP to PSP by calling setThreadingWithPSP function
-		osSched(SIXTEEN_BYTE_OFFSET);
+		osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler
 	}
 	return 0; //Return false when no threads have been created, or an error occurred
 }
@@ -131,7 +136,7 @@ int thread_switch(void)
 	return 1; //Return value can be used in assembly in r0
 }
 
-//SysTick handler function
+//SysTick handler function to handle timers
 void SysTick_Handler(void)
 {
 	//Decrement the timer for all sleeping threads
@@ -140,29 +145,28 @@ void SysTick_Handler(void)
 		//Only decrement the timer for sleeping threads
 		if (osThreads[i].status == SLEEPING)
 		{
-			osThreads[i].timer--;
-			//printf("THREAD: %d, SLEEPING TIME: %d\n", i+1, osThreads[i].timer);
+			osThreads[i].timer--; //Decrement timer
 			
 			//Check that the timer is up for sleeping threads
 			if (osThreads[i].timer == 0)
 			{
-				osThreads[i].status = WAITING;
-				osThreads[i].timer = TIMESLICE;
+				osThreads[i].status = WAITING; //Set status from sleeping to waiting
+				osThreads[i].timer = TIMESLICE; //Reset the timer to the default timeslice
 			}
 		}
 	}
 	
-	//Decrement the timer of the current running thread
-	osThreads[runningThread].timer--;
+	osThreads[runningThread].timer--; //Decrement the timer of the running thread
 	
 	//Check that the timer is up for running threads
 	if (osThreads[runningThread].timer == 0)
 	{
-		//Check for a running thread
-		if (osThreads[runningThread].status == RUNNING)
+		osThreads[runningThread].timer = TIMESLICE; //Reset the timeslice for the thread
+		
+		//Only call the scheduler function if resources are available 
+		//This prevents interrupting an in-progress context switch
+		if (accessResources)
 		{
-			osThreads[runningThread].timer = TIMESLICE; //Reset the timeslice for the thread
-			
 			//Call the scheduler function
 			//Offset by only 8x4 bytes when using SysTick to keep the stack aligned
 			//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
@@ -172,14 +176,17 @@ void SysTick_Handler(void)
 }
 
 //Idle thread when no other thread is running
+//This thread could call the scheduler after running 
+//However, for this lab it was chosen to run for the complete time slice of 5ms before context switching
 void osIdleThread(void* args)
 {
 	//Infinite loop for the thread
 	while (1)
 	{
-		printf("In thread 0\n");
-		osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler 
-		//SHOULD THE IDLE THREAD CALL THE SCHEDULER??
-		//Maybe our current error is due to the race conditions and not this line?
+		//Only print the first time the idle thread loops
+		if (osThreads[runningThread].timer == TIMESLICE)
+		{
+			printf("Running idle thread\n");
+		}
 	}
 }

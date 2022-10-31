@@ -39,8 +39,8 @@
 #define WAITING 2 //Thread is waiting to be run
 #define SLEEPING 3 //Thread is sleeping for a specified time after running
 
-//Timer constants for the threads
-#define TIMESLICE 5 //Timeslice (how long threads run) is 5ms
+//Timeslice for how long a thread will run (5ms)
+#define TIMESLICE 5 
 
 //Define thread struct for each thread stored
 typedef struct thread_struct
