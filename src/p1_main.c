@@ -44,7 +44,7 @@ void thread3(void* args)
 	while (1)
 	{
 		z++;
-		printf("In thread 3. z is: %d\n", x);
+		printf("In thread 3. z is: %d\n", z);
 	}
 }
 
@@ -81,7 +81,7 @@ void thread3(void* args)
 	while (1)
 	{
 		z++;
-		printf("In thread 3. z is: %d\n", x);
+		printf("In thread 3. z is: %d\n", z);
 		osSleep(17); //Sleep for 17ms
 	}
 }
