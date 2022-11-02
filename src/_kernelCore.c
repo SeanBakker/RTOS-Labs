@@ -41,7 +41,7 @@ void osSched(uint32_t PSP_Offset)
 		
 		//Set the thread stack pointer to the PSP
 		//The thread stack pointer must be restored to its location after all registers are pushed
-		//This is 16*4 bytes lower than its location before PendSV executes because we are using a uint32_t
+		//This is the specified PSP_Offset number of bytes lower than its location before PendSV executes
 		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - PSP_Offset);
 	}
 	
