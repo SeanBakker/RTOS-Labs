@@ -12,7 +12,6 @@ int num_threads = 0; //Set the number of total threads
 
 extern rtosThread osThreads[MAX_THREADS]; //Thread struct array
 extern int runningThread; //Current running thread index
-extern uint32_t mspAddress; //Store the address of the MSP location
 
 //Obtains the initial location of MSP by looking it up in the vector table
 uint32_t* getMSPInitialLocation(void)

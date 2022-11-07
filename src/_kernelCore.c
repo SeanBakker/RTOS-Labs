@@ -10,26 +10,21 @@
 
 rtosThread osThreads[MAX_THREADS]; //Static thread struct array
 int runningThread = 0; //Current running thread index
-uint32_t mspAddress; //Store the address of the MSP location
-bool accessResources = true; //Mutual exclusion Boolean variable
 
 extern int num_threads; //Number of threads created
 
 //Initializes memory structures and interrupts necessary to run the kernel
 void kernelInit(void)
 {
-	//Set bits 23-16 to 0xFF by bit shifting and bitwise OR SHPR3 with this value 
-	SHPR3	|= 0xFF << 16;	
-	
-	//Store the initial address of the MSP
-	mspAddress = *getMSPInitialLocation();
+	//Define the priorities of the PendSV, SysTick, and SVC interrupts
+	SHPR3	|= 0xFE << 16; //Set the priority of PendSV to almost the weakest (0xFE)
+	SHPR3 |= 0xFFU << 24; //Set the priority of SysTick to be the weakest (0xFFU)
+	SHPR2 |= 0xFDU << 24; //Set the priority of SVC the be the strongest (0xFDU)
 }
 
 //Called by the kernel to schedule which threads to run
-void osSched(uint32_t PSP_Offset)
+void osSched(void)
 {
-	accessResources = false; //Resources are not available after yielding
-	
 	//Check to make sure there is a thread currently running
 	if (runningThread >= 0)
 	{
@@ -41,8 +36,8 @@ void osSched(uint32_t PSP_Offset)
 		
 		//Set the thread stack pointer to the PSP
 		//The thread stack pointer must be restored to its location after all registers are pushed
-		//This is the specified PSP_Offset number of bytes lower than its location before PendSV executes
-		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - PSP_Offset);
+		//This is the specified EIGHT_BYTE_OFFSET number of bytes lower than its location before PendSV executes
+		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - EIGHT_BYTE_OFFSET);
 	}
 	
 	int previousActiveThread = runningThread; //Save the previous active thread index
@@ -74,21 +69,13 @@ void osSched(uint32_t PSP_Offset)
 	
 	//Set the thread to be in the running state
 	osThreads[runningThread].status = RUNNING;
-	
-	osYield(); //Context switch
 }
 
 //Call PendSV interrupt to context switch
 void osYield(void)
 {
-	accessResources = true; //Resources are available again
-	
-	//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
-	//Bit 28 of this register controls the behaviour of PendSV 
-	ICSR |= 1<<28;
-	
-	//Clear the pipeline before triggering an interrupt
-	__asm("isb");
+	//Trigger the SVC handler
+	__ASM("SVC #0");
 }
 
 //Sets the value of PSP to threadStack and ensures that the microcontroller is using that value by changing the CONTROL register
@@ -106,8 +93,7 @@ void osSleep(int sleepTime)
 {
 	osThreads[runningThread].timer = sleepTime; //Set the timer for the thread
 	osThreads[runningThread].status = SLEEPING; //Set the status of the thread to sleeping
-	
-	osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler
+	osYield(); //Yield
 }
 
 //Start the kernel
@@ -123,7 +109,7 @@ bool kernel_start(void)
 		//Initialization for the first thread before it starts running
 		runningThread = -1; //No threads currently running, the thread at index 0 will run first when running the scheduler 
 		setThreadingWithPSP(osThreads[0].threadStack); //Set thread mode and SP to PSP by calling setThreadingWithPSP function
-		osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler
+		osYield(); //Yield
 	}
 	return 0; //Return false when no threads have been created, or an error occurred
 }
@@ -163,15 +149,47 @@ void SysTick_Handler(void)
 	{
 		osThreads[runningThread].timer = TIMESLICE; //Reset the timeslice for the thread
 		
-		//Only call the scheduler function if resources are available 
-		//This prevents interrupting an in-progress context switch
-		if (accessResources)
-		{
-			//Call the scheduler function
-			//Offset by only 8x4 bytes when using SysTick to keep the stack aligned
-			//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
-			osSched(EIGHT_BYTE_OFFSET);
-		}
+		//Trigger the SVC handler
+		__ASM("SVC #1");
+	}
+}
+
+//SVC handler function
+void SVC_Handler_Main(uint32_t *svc_args)
+{
+	//Get the argument from the stack
+	char call = ((char*)svc_args[6])[-2];
+	
+	//Yield Switch
+	if(call == YIELD_SWITCH)
+	{
+		//Run the scheduler
+		//Offset by only 8x4 bytes when in an interrupt already to keep the stack aligned
+		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
+		osSched();
+		
+		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
+		//Bit 28 of this register controls the behaviour of PendSV 
+		ICSR |= 1<<28;
+		
+		//Clear the pipeline before triggering an interrupt
+		__asm("isb");
+	}
+	
+	//SysTick Switch
+	if(call == SYSTICK_SWITCH)
+	{
+		//Run the scheduler
+		//Offset by only 8x4 bytes when in an interrupt already to keep the stack aligned
+		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
+		osSched();
+		
+		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
+		//Bit 28 of this register controls the behaviour of PendSV 
+		ICSR |= 1<<28;
+		
+		//Clear the pipeline before triggering an interrupt
+		__asm("isb");
 	}
 }
 

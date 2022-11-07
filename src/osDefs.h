@@ -17,6 +17,9 @@
 //Define the System Handler Priority Register 3 for the location of the PendSV priority register
 #define SHPR3 *(uint32_t*)0xE000ED20
 
+//Define the System Handler Priority Register 2 for the location of the SVC priority register
+#define SHPR2 *(uint32_t*)0xE000ED1C
+
 //Define the Interrupt Control and State Register memory location
 #define ICSR *(uint32_t*)0xE000ED04
 
@@ -26,7 +29,6 @@
 #define MAX_STACK_SIZE 0x2000 //Set the maximum stack size (0x2000)
 
 //Stack alignment constants for context switching
-#define SIXTEEN_BYTE_OFFSET 16*4 //Stack PSP offset for PendSV interrupt
 #define EIGHT_BYTE_OFFSET 8*4 //Stack PSP offset for tail-chained interrupts
 
 //Define maximum number of threads
@@ -41,6 +43,10 @@
 
 //Timeslice for how long a thread will run (5ms)
 #define TIMESLICE 5 
+
+//Define the interrupt numbers for SVC
+#define YIELD_SWITCH 0
+#define SYSTICK_SWITCH 1
 
 //Define thread struct for each thread stored
 typedef struct thread_struct

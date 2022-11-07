@@ -21,7 +21,7 @@ void thread1(void* args)
 	{
 		x++;
 		printf("In thread 1. x is: %d\n", x);
-		osSched(SIXTEEN_BYTE_OFFSET); //Call the scheduler 
+		osYield(); //Yield
 	}
 }
 
