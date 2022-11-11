@@ -36,7 +36,6 @@
 #define MAX_THREADS 11
 
 //Thread states
-#define CREATED 0 //Thread is created
 #define RUNNING 1 //Active thread is running
 #define WAITING 2 //Thread is waiting to be run
 #define SLEEPING 3 //Thread is sleeping for a specified time after running
@@ -46,7 +45,9 @@
 
 //Define the interrupt numbers for SVC
 #define YIELD_SWITCH 0
-#define SYSTICK_SWITCH 1
+
+//Define the idle thread deadline
+#define IDLE_DEADLINE 100000
 
 //Define thread struct for each thread stored
 typedef struct thread_struct
@@ -55,6 +56,9 @@ typedef struct thread_struct
 	void (*threadFunc)(void* args); //Thread function pointer
 	int status; //Status of the thread (Running/Waiting/Blocked)
 	int timer; //Timer for the thread
+	int timeToDeadline; //Timer for the deadline
+	int period; //Stores the thread period (periodic thread)
+	int deadline; //Stores the thread deadline
 }rtosThread;
 
 #endif

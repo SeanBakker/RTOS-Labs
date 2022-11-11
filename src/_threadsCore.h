@@ -21,7 +21,10 @@ uint32_t* getMSPInitialLocation(void);
 uint32_t* getNewThreadStack(uint32_t offset);
 
 //Creates one single thread, returns the thread ID or -1 if the thread cannot be created
-int create_thread(void (*func)(void* args));
+int create_thread(void (*func)(void* args), int deadline);
+
+//Creates one single thread, returns the thread ID or -1 if the thread cannot be created
+int create_periodic(void (*func)(void* args), int deadline, int period);
 
 //Thread function type
 typedef void *threadFunc(void);

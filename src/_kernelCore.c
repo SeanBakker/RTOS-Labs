@@ -36,46 +36,48 @@ void osSched(void)
 		
 		//Set the thread stack pointer to the PSP
 		//The thread stack pointer must be restored to its location after all registers are pushed
-		//This is the specified EIGHT_BYTE_OFFSET number of bytes lower than its location before PendSV executes
+		//This is the specified EIGHT_BYTE_OFFSET number of bytes lower than its location before PendSV executes due to tail-chained interrupts
+		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
 		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - EIGHT_BYTE_OFFSET);
 	}
 	
-	int previousActiveThread = runningThread; //Save the previous active thread index
-	runningThread++; //Loop through the threads 
+	int EDFIndex = -1; //Initial index of thread with earliest deadline (invalid)
 	
-	//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
-	if (runningThread >= num_threads - 1)
+	//Loop over all the threads and find the first waiting thread
+	for (int index = 0; index < num_threads; index++)
 	{
-		runningThread = 0;
-	}
-	
-	//Loop through the thread struct array when the next runningThread index is a sleeping thread
-	while(osThreads[runningThread].status == SLEEPING)
-	{
-		runningThread++; //Increment the index to loop through the threads 
-		
-		//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
-		if (runningThread >= num_threads - 1)
+		//Find the first waiting thread in the array
+		if (osThreads[index].status == WAITING && EDFIndex == -1)
 		{
-			runningThread = 0;
+			EDFIndex = index; //Set the EDFIndex to the first waiting thread's index
+			index = EDFIndex + 1; //Increment index 1 greater than the EDFIndex
 		}
 		
-		//After looping through all of the threads, if they are all sleeping then run the idle thread
-		if (runningThread == previousActiveThread + 1)
+		//Find the thread with the earliest deadline of the rest of the threads in the array
+		//Exclude the idle thread (since it is always waiting)
+		if (index < num_threads - 1 && EDFIndex > -1)
 		{
-			runningThread = num_threads - 1; //Set the running thread to be the idle thread
+			//Only check waiting threads that could be scheduled
+			if (osThreads[index].status == WAITING)
+			{
+				//Compare the time to deadlines of the EDFIndex thread and the current index thread
+				if (osThreads[index].timeToDeadline < osThreads[EDFIndex].timeToDeadline)
+				{
+					EDFIndex = index; //Set the new EDFIndex when the deadline is earlier
+				}
+			}
 		}
 	}
-	
-	//Set the thread to be in the running state
-	osThreads[runningThread].status = RUNNING;
+
+	runningThread = EDFIndex; //Set the runningThread index to run
+	osThreads[runningThread].status = RUNNING; //Set the thread to be in the running state
 }
 
 //Call PendSV interrupt to context switch
 void osYield(void)
 {
 	//Trigger the SVC handler
-	__ASM("SVC #0");
+	__asm("SVC #0");
 }
 
 //Sets the value of PSP to threadStack and ensures that the microcontroller is using that value by changing the CONTROL register
@@ -99,7 +101,7 @@ void osSleep(int sleepTime)
 //Start the kernel
 bool kernel_start(void)
 {
-	create_thread(osIdleThread); //Create the idle thread
+	create_thread(osIdleThread, 0); //Create the idle thread
 	
 	SysTick_Config(SystemCoreClock/1000); //Configure the SysTick timer
 	
@@ -125,19 +127,49 @@ int thread_switch(void)
 //SysTick handler function to handle timers
 void SysTick_Handler(void)
 {
-	//Decrement the timer for all sleeping threads
+	//Decrement all of the deadlines
 	for (int i = 0; i < num_threads - 1; i++)
 	{
+		osThreads[i].timeToDeadline--; //Decrement deadlines
+		
 		//Only decrement the timer for sleeping threads
 		if (osThreads[i].status == SLEEPING)
 		{
 			osThreads[i].timer--; //Decrement timer
-			
+		}
+	}
+	
+	//Check if sleeping threads/periodic threads awake
+	for (int i = 0; i < num_threads - 1; i++)
+	{
+		//Check if a sleeping thread awakes
+		if (osThreads[i].status == SLEEPING)
+		{
 			//Check that the timer is up for sleeping threads
 			if (osThreads[i].timer == 0)
 			{
 				osThreads[i].status = WAITING; //Set status from sleeping to waiting
 				osThreads[i].timer = TIMESLICE; //Reset the timer to the default timeslice
+				osThreads[i].timeToDeadline = osThreads[i].deadline; //Reset the deadline timer once the thread awakes
+				
+				//A simple sleeping thread will be set to a state of waiting
+				//A periodic thread must pre-empt the running thread if it has higher priority
+				if (osThreads[i].period > 0)
+				{
+					//Check if the sleeping periodic thread has higher priority than the currently running thread
+					if (osThreads[i].timeToDeadline < osThreads[runningThread].timeToDeadline || runningThread == num_threads - 1)
+					{
+						//Run the scheduler
+						osSched();
+						
+						//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
+						//Bit 28 of this register controls the behaviour of PendSV 
+						ICSR |= 1<<28;
+						
+						//Clear the pipeline before triggering an interrupt
+						__asm("isb");
+					}
+				}
 			}
 		}
 	}
@@ -149,8 +181,15 @@ void SysTick_Handler(void)
 	{
 		osThreads[runningThread].timer = TIMESLICE; //Reset the timeslice for the thread
 		
-		//Trigger the SVC handler
-		__ASM("SVC #1");
+		//Run the scheduler
+		osSched();
+		
+		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
+		//Bit 28 of this register controls the behaviour of PendSV 
+		ICSR |= 1<<28;
+		
+		//Clear the pipeline before triggering an interrupt
+		__asm("isb");
 	}
 }
 
@@ -163,25 +202,9 @@ void SVC_Handler_Main(uint32_t *svc_args)
 	//Yield Switch
 	if(call == YIELD_SWITCH)
 	{
-		//Run the scheduler
-		//Offset by only 8x4 bytes when in an interrupt already to keep the stack aligned
-		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
-		osSched();
+		osThreads[runningThread].timeToDeadline = osThreads[runningThread].deadline; //Reset the deadline timer
 		
-		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
-		//Bit 28 of this register controls the behaviour of PendSV 
-		ICSR |= 1<<28;
-		
-		//Clear the pipeline before triggering an interrupt
-		__asm("isb");
-	}
-	
-	//SysTick Switch
-	if(call == SYSTICK_SWITCH)
-	{
 		//Run the scheduler
-		//Offset by only 8x4 bytes when in an interrupt already to keep the stack aligned
-		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
 		osSched();
 		
 		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done

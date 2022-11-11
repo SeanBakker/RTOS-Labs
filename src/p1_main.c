@@ -12,7 +12,47 @@ int x = 0;
 int y = 0;
 int z = 0;
 
+/*
 //Test Cases #1
+//Thread 1 (periodic yields)
+void thread1(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		x++;
+		printf("In thread 1. x is: %d\n", x);
+		osYield(); //Yield
+	}
+}
+
+//Thread 2 (periodic yields)
+void thread2(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		y++;
+		printf("In thread 2. y is: %d\n", y);
+		osYield(); //Yield
+	}
+}
+
+//Thread 3 (periodic yields)
+void thread3(void* args)
+{
+	//Infinite loop for the thread
+	while (1)
+	{
+		z++;
+		printf("In thread 3. z is: %d\n", z);
+		osYield(); //Yield
+	}
+}
+*/
+
+/*
+//Test Cases #2
 //Thread 1 (yields after running)
 void thread1(void* args)
 {
@@ -37,7 +77,7 @@ void thread2(void* args)
 	}
 }
 
-//Thread 3 (doesn't yield or sleep)
+//Thread 3 (periodic yields)
 void thread3(void* args)
 {
 	//Infinite loop for the thread
@@ -45,11 +85,13 @@ void thread3(void* args)
 	{
 		z++;
 		printf("In thread 3. z is: %d\n", z);
+		osYield(); //Yield
 	}
 }
+*/
 
-/*
-//Test Cases #2
+
+//Test Cases #3
 //Thread 1 (sleeps 3ms after running)
 void thread1(void* args)
 {
@@ -85,7 +127,7 @@ void thread3(void* args)
 		osSleep(17); //Sleep for 17ms
 	}
 }
-*/
+
 
 //This is C. The expected function heading is int main(void)
 int main(void) 
@@ -103,10 +145,26 @@ int main(void)
 	//Call kernelInit before the infinite while loop
 	kernelInit();
 	
-	//Setup threads
-	create_thread(thread1);
-	create_thread(thread2);
-	create_thread(thread3);
+	/*
+	//Test Cases #1
+	create_periodic(thread1, 100, (1/256));
+	create_periodic(thread2, 100, (1/100));
+	create_periodic(thread3, 100, (1/12));
+	*/
+	
+	/*
+	//Test Cases #2
+	create_thread(thread1, 100);
+	create_thread(thread2, 100);
+	create_periodic(thread3, 100, (1/200));
+	*/
+	
+	
+	//Test Cases #3
+	create_thread(thread1, 100);
+	create_thread(thread2, 100);
+	create_thread(thread3, 100);
+	
 	
 	//Start the kernel
 	kernel_start();
