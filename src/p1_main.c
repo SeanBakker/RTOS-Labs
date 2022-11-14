@@ -147,23 +147,23 @@ int main(void)
 	
 	/*
 	//Test Cases #1
-	create_periodic(thread1, 100, (1/256));
-	create_periodic(thread2, 100, (1/100));
-	create_periodic(thread3, 100, (1/12));
+	create_periodic(thread1, 100, (256));
+	create_periodic(thread2, 100, (100));
+	create_periodic(thread3, 100, (12));
 	*/
 	
 	/*
 	//Test Cases #2
-	create_thread(thread1, 100);
+	create_thread(thread1, 1000);
 	create_thread(thread2, 100);
-	create_periodic(thread3, 100, (1/200));
+	create_periodic(thread3, 50, (200));
 	*/
 	
 	
 	//Test Cases #3
 	create_thread(thread1, 100);
-	create_thread(thread2, 100);
-	create_thread(thread3, 100);
+	create_thread(thread2, 80);
+	create_thread(thread3, 50);
 	
 	
 	//Start the kernel

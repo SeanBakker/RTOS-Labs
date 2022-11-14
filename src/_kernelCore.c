@@ -28,10 +28,23 @@ void osSched(void)
 	//Check to make sure there is a thread currently running
 	if (runningThread >= 0)
 	{
+		//Put periodic threads to sleep for their specified period
+		if (osThreads[runningThread].period > 0)
+		{
+			osThreads[runningThread].timer = osThreads[runningThread].period; //Set the timer for the thread as the period
+			osThreads[runningThread].status = SLEEPING; //Set the status of the thread to sleeping
+		}
+		
 		//Sleeping threads are handled by the SysTick handler so their state should not be changed here after a context switch
 		if (osThreads[runningThread].status != SLEEPING)
 		{
 			osThreads[runningThread].status = WAITING; //Set the current thread as waiting but not running yet
+		}
+		
+		//Reset the idle thread timeslice when yielding
+		if (runningThread == num_threads - 1)
+		{
+			osThreads[runningThread].timer = TIMESLICE; //Set the timer to the timeslice
 		}
 		
 		//Set the thread stack pointer to the PSP
@@ -225,9 +238,7 @@ void osIdleThread(void* args)
 	while (1)
 	{
 		//Only print the first time the idle thread loops
-		if (osThreads[runningThread].timer == TIMESLICE)
-		{
-			printf("Running idle thread\n");
-		}
+		printf("Running idle thread\n");
+		osYield(); //Yield
 	}
 }

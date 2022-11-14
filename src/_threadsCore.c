@@ -95,10 +95,12 @@ int create_thread(void (*func)(void* args), int deadline)
 }
 
 //Creates one single thread, returns the thread ID or -1 if the thread cannot be created
-int create_periodic(void (*func)(void* args), int deadline, int period)
+int create_periodic(void (*func)(void* args), int deadline, int frequency)
 {
 	int id = create_thread(func, deadline); //Create the thread
-	osThreads[id].period = period; //Set the period of the thread
+	
+	//Convert period in Hz to ms (inverse of Hz is seconds, multiply by 1000 for ms)
+	osThreads[id].period = (1000/frequency); //Set the period of the thread
 	
 	return id; //Return the id or -1 if the thread cannot be created
 }
