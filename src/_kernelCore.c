@@ -17,7 +17,7 @@ extern int num_threads; //Number of threads created
 void kernelInit(void)
 {
 	//Define the priorities of the PendSV, SysTick, and SVC interrupts
-	SHPR3	|= 0xFE << 16; //Set the priority of PendSV to almost the weakest (0xFE)
+	SHPR3 |= 0xFE << 16; //Set the priority of PendSV to almost the weakest (0xFE)
 	SHPR3 |= 0xFFU << 24; //Set the priority of SysTick to be the weakest (0xFFU)
 	SHPR2 |= 0xFDU << 24; //Set the priority of SVC the be the strongest (0xFDU)
 }
