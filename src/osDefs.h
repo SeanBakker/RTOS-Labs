@@ -46,9 +46,6 @@
 //Define the interrupt numbers for SVC
 #define YIELD_SWITCH 0
 
-//Define the idle thread deadline
-#define IDLE_DEADLINE 100000
-
 //Define thread struct for each thread stored
 typedef struct thread_struct
 {
