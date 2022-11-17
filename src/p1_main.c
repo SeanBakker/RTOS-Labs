@@ -147,16 +147,16 @@ int main(void)
 	
 	/*
 	//Test Cases #1
-	create_periodic(thread1, 100, (256));
-	create_periodic(thread2, 100, (100));
-	create_periodic(thread3, 100, (12));
+	create_periodic(thread1, 100, (256)); //256Hz frequency
+	create_periodic(thread2, 100, (100)); //100Hz frequency
+	create_periodic(thread3, 100, (12)); //12Hz frequency
 	*/
 	
 	/*
 	//Test Cases #2
 	create_thread(thread1, 1000);
 	create_thread(thread2, 100);
-	create_periodic(thread3, 50, (200));
+	create_periodic(thread3, 50, (200)); //200Hz frequency
 	*/
 	
 	
