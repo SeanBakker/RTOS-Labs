@@ -9,6 +9,8 @@
 #include "_threadsCore.h"
 
 rtosThread osThreads[MAX_THREADS]; //Static thread struct array
+osMutex osMutexes[MAX_MUTEXES]; //Static mutex struct array
+int num_mutexes = 0; //Number of created mutexes
 int runningThread = 0; //Current running thread index
 
 extern int num_threads; //Number of threads created
@@ -23,67 +25,52 @@ void kernelInit(void)
 }
 
 //Called by the kernel to schedule which threads to run
-void osSched(void)
+void osSched(uint32_t PSP_Offset)
 {
 	//Check to make sure there is a thread currently running
 	if (runningThread >= 0)
 	{
-		//Put periodic threads to sleep for their specified period
-		if (osThreads[runningThread].period > 0)
-		{
-			osThreads[runningThread].timer = osThreads[runningThread].period; //Set the timer for the thread as the period
-			osThreads[runningThread].status = SLEEPING; //Set the status of the thread to sleeping
-		}
-		
 		//Sleeping threads are handled by the SysTick handler so their state should not be changed here after a context switch
 		if (osThreads[runningThread].status != SLEEPING)
 		{
 			osThreads[runningThread].status = WAITING; //Set the current thread as waiting but not running yet
 		}
 		
-		//Reset the idle thread timeslice when yielding
-		if (runningThread == num_threads - 1)
-		{
-			osThreads[runningThread].timer = TIMESLICE; //Set the timer to the timeslice
-		}
-		
 		//Set the thread stack pointer to the PSP
 		//The thread stack pointer must be restored to its location after all registers are pushed
-		//This is the specified EIGHT_BYTE_OFFSET number of bytes lower than its location before PendSV executes due to tail-chained interrupts
-		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
-		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - EIGHT_BYTE_OFFSET);
+		//This is the specified PSP_Offset number of bytes lower than its location before PendSV executes
+		osThreads[runningThread].threadStack = (uint32_t*)(__get_PSP() - PSP_Offset);
 	}
 	
-	int EDFIndex = -1; //Initial index of thread with earliest deadline (invalid)
+	int previousActiveThread = runningThread; //Save the previous active thread index
+	runningThread++; //Loop through the threads 
 	
-	//Loop over all the threads and find the first waiting thread
-	for (int index = 0; index < num_threads; index++)
+	//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
+	if (runningThread >= num_threads - 1)
 	{
-		//Find the first waiting thread in the array
-		if (osThreads[index].status == WAITING && EDFIndex == -1)
+		runningThread = 0;
+	}
+	
+	//Loop through the thread struct array when the next runningThread index is a sleeping thread
+	while(osThreads[runningThread].status == SLEEPING || osThreads[runningThread].status == BLOCKED)
+	{
+		runningThread++; //Increment the index to loop through the threads 
+		
+		//Reset the runningThread back to the first thread (0) after it has looped through all of the threads
+		if (runningThread >= num_threads - 1)
 		{
-			EDFIndex = index; //Set the EDFIndex to the first waiting thread's index
-			index = EDFIndex + 1; //Increment index 1 greater than the EDFIndex
+			runningThread = 0;
 		}
 		
-		//Find the thread with the earliest deadline of the rest of the threads in the array
-		//Exclude the idle thread (since it is always waiting)
-		if (index < num_threads - 1 && EDFIndex > -1)
+		//After looping through all of the threads, if they are all sleeping then run the idle thread
+		if (runningThread == previousActiveThread + 1)
 		{
-			//Only check waiting threads that could be scheduled
-			if (osThreads[index].status == WAITING)
-			{
-				//Compare the time to deadlines of the EDFIndex thread and the current index thread
-				if (osThreads[index].timeToDeadline < osThreads[EDFIndex].timeToDeadline)
-				{
-					EDFIndex = index; //Set the new EDFIndex when the deadline is earlier
-				}
-			}
+			runningThread = num_threads - 1; //Set the running thread to be the idle thread
 		}
 	}
-
-	runningThread = EDFIndex; //Set the runningThread index to run
-	osThreads[runningThread].status = RUNNING; //Set the thread to be in the running state
+	
+	//Set the thread to be in the running state
+	osThreads[runningThread].status = RUNNING;
 }
 
 //Call PendSV interrupt to context switch
@@ -114,7 +101,7 @@ void osSleep(int sleepTime)
 //Start the kernel
 bool kernel_start(void)
 {
-	create_thread(osIdleThread, 0); //Create the idle thread
+	create_thread(osIdleThread); //Create the idle thread
 	
 	SysTick_Config(SystemCoreClock/1000); //Configure the SysTick timer
 	
@@ -140,49 +127,19 @@ int thread_switch(void)
 //SysTick handler function to handle timers
 void SysTick_Handler(void)
 {
-	//Decrement all of the deadlines
+	//Decrement the timer for all sleeping threads
 	for (int i = 0; i < num_threads - 1; i++)
 	{
-		osThreads[i].timeToDeadline--; //Decrement deadlines
-		
 		//Only decrement the timer for sleeping threads
 		if (osThreads[i].status == SLEEPING)
 		{
 			osThreads[i].timer--; //Decrement timer
-		}
-	}
-	
-	//Check if sleeping threads/periodic threads awake
-	for (int i = 0; i < num_threads - 1; i++)
-	{
-		//Check if a sleeping thread awakes
-		if (osThreads[i].status == SLEEPING)
-		{
+			
 			//Check that the timer is up for sleeping threads
 			if (osThreads[i].timer == 0)
 			{
 				osThreads[i].status = WAITING; //Set status from sleeping to waiting
 				osThreads[i].timer = TIMESLICE; //Reset the timer to the default timeslice
-				osThreads[i].timeToDeadline = osThreads[i].deadline; //Reset the deadline timer once the thread awakes
-				
-				//A simple sleeping thread will be set to a state of waiting
-				//A periodic thread must pre-empt the running thread if it has higher priority
-				if (osThreads[i].period > 0)
-				{
-					//Check if the sleeping periodic thread has higher priority than the currently running thread
-					if (osThreads[i].timeToDeadline < osThreads[runningThread].timeToDeadline || runningThread == num_threads - 1)
-					{
-						//Run the scheduler
-						osSched();
-						
-						//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
-						//Bit 28 of this register controls the behaviour of PendSV 
-						ICSR |= 1<<28;
-						
-						//Clear the pipeline before triggering an interrupt
-						__asm("isb");
-					}
-				}
 			}
 		}
 	}
@@ -194,15 +151,107 @@ void SysTick_Handler(void)
 	{
 		osThreads[runningThread].timer = TIMESLICE; //Reset the timeslice for the thread
 		
-		//Run the scheduler
-		osSched();
+		//Call the scheduler function
+		//Offset by only 8x4 bytes when using SysTick to keep the stack aligned
+		//In tail-chained interrupts, the 8 hardware saved registers do not need to be pushed again
+		osSched(EIGHT_BYTE_OFFSET);
 		
+		//Yield manually so that we don't have to pass the offset into osYield()
 		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
 		//Bit 28 of this register controls the behaviour of PendSV 
 		ICSR |= 1<<28;
 		
 		//Clear the pipeline before triggering an interrupt
 		__asm("isb");
+	}
+}
+
+//Create a mutex
+int osCreateMutex(void)
+{
+	//Create the mutex if the number of mutexes is less than the maximum
+	if (num_mutexes < MAX_MUTEXES)
+	{
+		osMutexes[num_mutexes].available = true; //Set the mutex as available
+		osMutexes[num_mutexes].ID = num_mutexes; //Set the ID of mutex to the current index
+		osMutexes[num_mutexes].threadOwns = -1; //No thread owns the mutex yet, so a value of -1 is used
+		
+		//Initalize the waiting queue for this mutex to have no threads stored (all indexes equal to -1)
+		for(int i = 0; i < MAX_THREADS; i++)
+		{
+			osMutexes[num_mutexes].waitingQueue[i] = -1; //Set the index as -1 (no thread)
+		}
+		
+		num_mutexes++; //Increment the number of mutexes
+		return num_mutexes - 1; //Return the mutex index (position of the mutex in the array)
+	}
+	return -1; //Return -1 if the mutex cannot be created
+}
+
+//Acquire the mutex
+bool osAcquireMutex(int thread_index, int mutex_index)
+{
+	//Only acquire the mutex if it is available or the thread already owns the mutex
+	if(osMutexes[mutex_index].available || osMutexes[mutex_index].threadOwns == thread_index)
+	{
+		osMutexes[mutex_index].threadOwns = thread_index; //Set the thread index that owns the mutex
+		osMutexes[mutex_index].available = false; //Set the availbility of the mutex to false
+		return true; //Return that acquiring the mutex was successful
+	}
+	else 
+	{
+		//If the mutex cannot be acquired, store the thread index in the waiting queue
+		for(int i = 0; i < MAX_THREADS; i++)
+		{
+			//Check to see if the thread is already stored in the waiting queue
+			if (osMutexes[mutex_index].waitingQueue[i] != thread_index)
+			{
+				//Find the first free index in the queue and store the thread index there
+				if(osMutexes[mutex_index].waitingQueue[i] == -1)
+				{
+					osMutexes[mutex_index].waitingQueue[i] = thread_index; //Store the thread index
+					osThreads[thread_index].status = BLOCKED; //Block the thread while in the waiting queue
+					i = MAX_THREADS; //Break out of the loop
+				}
+			}
+			else 
+			{
+				i = MAX_THREADS; //Break out of the loop if it is already stored in the waiting queue
+			}
+		}
+	}
+	return false; //Return false when the mutex has not been acquired
+}
+
+//Release the mutex
+void osReleaseMutex(int thread_index, int mutex_index)
+{
+	//Only release the mutex if the thread already owns it
+	if(osMutexes[mutex_index].threadOwns == thread_index)
+	{
+		osMutexes[mutex_index].available = true; //Set the availbility of the mutex to true
+		
+		//Give the mutex to the next thread in the waiting queue
+		if(osMutexes[mutex_index].waitingQueue[0] != -1)
+		{
+			//Set the next thread in the waiting queue to acquire the mutex
+			//The waitTime is set to -1 since we know the mutex is available anyways
+			osAcquireMutex(osMutexes[mutex_index].waitingQueue[0], mutex_index);
+			
+			//Move the thread back into the OS's thread waiting pool
+			osThreads[osMutexes[mutex_index].waitingQueue[0]].status = WAITING; 
+			
+			//Shift all the threads waiting in the waiting queue
+			//This means the next waiting thread is in the earliest index (0)
+			for(int i = 0; i < MAX_THREADS - 1; i++)
+			{
+				//Move the thread from the i+1 to the index at i
+				osMutexes[mutex_index].waitingQueue[i] = osMutexes[mutex_index].waitingQueue[i+1];
+			}
+			
+			//Make the last position empty in the waiting queue
+			osMutexes[mutex_index].waitingQueue[MAX_THREADS - 1] = -1;
+		}
 	}
 }
 
@@ -214,11 +263,9 @@ void SVC_Handler_Main(uint32_t *svc_args)
 	
 	//Yield Switch
 	if(call == YIELD_SWITCH)
-	{
-		osThreads[runningThread].timeToDeadline = osThreads[runningThread].deadline; //Reset the deadline timer
-		
+	{	
 		//Run the scheduler
-		osSched();
+		osSched(EIGHT_BYTE_OFFSET);
 		
 		//Set PendSV exception state to pending to run the interrupt when all other interrupts are done
 		//Bit 28 of this register controls the behaviour of PendSV 
@@ -238,7 +285,9 @@ void osIdleThread(void* args)
 	while (1)
 	{
 		//Only print the first time the idle thread loops
-		printf("Running idle thread\n");
-		osYield(); //Yield
+		if (osThreads[runningThread].timer == TIMESLICE)
+		{
+			printf("Running idle thread\n");
+		}
 	}
 }

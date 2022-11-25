@@ -12,86 +12,73 @@ int x = 0;
 int y = 0;
 int z = 0;
 
-/*
+//Define created mutexes
+int mutex_1;
+int mutex_2;
+
+//Define the threads
+int thread_1;
+int thread_2;
+int thread_3;
+
 //Test Cases #1
-//Thread 1 (periodic yields)
-void thread1(void* args)
-{
-	//Infinite loop for the thread
-	while (1)
-	{
-		x++;
-		printf("In thread 1. x is: %d\n", x);
-		osYield(); //Yield
-	}
-}
-
-//Thread 2 (periodic yields)
-void thread2(void* args)
-{
-	//Infinite loop for the thread
-	while (1)
-	{
-		y++;
-		printf("In thread 2. y is: %d\n", y);
-		osYield(); //Yield
-	}
-}
-
-//Thread 3 (periodic yields)
-void thread3(void* args)
-{
-	//Infinite loop for the thread
-	while (1)
-	{
-		z++;
-		printf("In thread 3. z is: %d\n", z);
-		osYield(); //Yield
-	}
-}
-*/
-
-/*
-//Test Cases #2
 //Thread 1 (yields after running)
 void thread1(void* args)
 {
 	//Infinite loop for the thread
 	while (1)
 	{
-		x++;
-		printf("In thread 1. x is: %d\n", x);
-		osYield(); //Yield
+		//Acquire the mutex for uart to print
+		if(osAcquireMutex(thread_1, mutex_1))
+		{
+			printf("Thread 1\n"); //print
+			printf("Extra Printing -----------------------------------------------------------------------\n");
+		}
+		
+		//Release the mutex after printing
+		osReleaseMutex(thread_1, mutex_1);  
+		osYield(); //Yield 
 	}
 }
 
-//Thread 2 (sleeps after running)
+//Thread 2 (yields after running)
 void thread2(void* args)
 {
 	//Infinite loop for the thread
 	while (1)
 	{
-		y++;
-		printf("In thread 2. y is: %d\n", y);
-		osSleep(20); //Sleep for 20ms
+		//Acquire the mutex for uart to print
+		if(osAcquireMutex(thread_2, mutex_1))
+		{
+			printf("Thread 2\n"); //print
+		}
+		
+		//Release the mutex after printing
+		osReleaseMutex(thread_2, mutex_1);
+		osYield(); //Yield 
 	}
 }
 
-//Thread 3 (periodic yields)
+//Thread 3 (yields after running)
 void thread3(void* args)
 {
 	//Infinite loop for the thread
 	while (1)
 	{
-		z++;
-		printf("In thread 3. z is: %d\n", z);
-		osYield(); //Yield
+		//Acquire the mutex for uart to print
+		if(osAcquireMutex(thread_3, mutex_1))
+		{
+			printf("Thread 3\n"); //print
+		}
+		
+		//Release the mutex after printing
+		osReleaseMutex(thread_3, mutex_1);
+		osYield(); //Yield 
 	}
 }
-*/
 
-
-//Test Cases #3
+/*
+//Test Cases #2
 //Thread 1 (sleeps 3ms after running)
 void thread1(void* args)
 {
@@ -127,7 +114,7 @@ void thread3(void* args)
 		osSleep(17); //Sleep for 17ms
 	}
 }
-
+*/
 
 //This is C. The expected function heading is int main(void)
 int main(void) 
@@ -145,26 +132,21 @@ int main(void)
 	//Call kernelInit before the infinite while loop
 	kernelInit();
 	
+	//Setup threads
+	thread_1 = create_thread(thread1);
+	thread_2 = create_thread(thread2);
+	thread_3 = create_thread(thread3);
+	
+	//Setup mutexes
+	
+	//Test case #1
+	mutex_1 = osCreateMutex();
+	
+	//Test case #2
 	/*
-	//Test Cases #1
-	create_periodic(thread1, 100, (256)); //256Hz frequency
-	create_periodic(thread2, 100, (100)); //100Hz frequency
-	create_periodic(thread3, 100, (12)); //12Hz frequency
+	mutex_1 = osCreateMutex();
+	mutex_2 = osCreateMutex();
 	*/
-	
-	/*
-	//Test Cases #2
-	create_thread(thread1, 1000);
-	create_thread(thread2, 100);
-	create_periodic(thread3, 50, (200)); //200Hz frequency
-	*/
-	
-	
-	//Test Cases #3
-	create_thread(thread1, 100);
-	create_thread(thread2, 80);
-	create_thread(thread3, 50);
-	
 	
 	//Start the kernel
 	kernel_start();

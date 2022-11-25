@@ -51,7 +51,7 @@ uint32_t* getNewThreadStack(uint32_t offset)
 }
 
 //Creates one single thread, returns the thread ID or -1 if the thread cannot be created
-int create_thread(void (*func)(void* args), int deadline)
+int create_thread(void (*func)(void* args))
 {
 	//Get the new thread stack pointer location
 	uint32_t* newThreadStack = getNewThreadStack(MSR_STACK_SIZE + (num_threads*THREAD_STACK_SIZE));
@@ -59,13 +59,10 @@ int create_thread(void (*func)(void* args), int deadline)
 	//Check the number of threads does not exceed the maximum
 	if (num_threads < MAX_THREADS && newThreadStack != 0)
 	{		
-		osThreads[num_threads].status = WAITING; //Set the status of the thread
+		osThreads[num_threads].status = CREATED; //Set the status of the thread
 		osThreads[num_threads].threadFunc = func; //Store the function pointer for the thread
 		osThreads[num_threads].threadStack = newThreadStack; //Store the stack pointer location for this thread stack pointer
 		osThreads[num_threads].timer = TIMESLICE; //Set the timeslice for the thread
-		osThreads[num_threads].period = 0; //For non-periodic threads, their period is set to 0
-		osThreads[num_threads].deadline = deadline; //Set the deadline for the thread
-		osThreads[num_threads].timeToDeadline = deadline; //Set the deadline for the thread
 		
 		//Setup the stack for the new thread
 		//Set 24th bit of the SP, this sets xpsr (status register)
@@ -92,15 +89,4 @@ int create_thread(void (*func)(void* args), int deadline)
 		return num_threads - 1; //Return the thread index (position of the thread in the array)
 	}
 	return -1; //Return -1 if the thread cannot be created
-}
-
-//Creates one single thread, returns the thread ID or -1 if the thread cannot be created
-int create_periodic(void (*func)(void* args), int deadline, int frequency)
-{
-	int id = create_thread(func, deadline); //Create the thread
-	
-	//Convert period in Hz to ms (inverse of Hz is seconds, multiply by 1000 for ms)
-	osThreads[id].period = (1000/frequency); //Set the period of the thread
-	
-	return id; //Return the id or -1 if the thread cannot be created
 }

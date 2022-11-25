@@ -14,7 +14,7 @@
 void kernelInit(void);
 
 //Called by the kernel to schedule which threads to run
-void osSched(void);
+void osSched(uint32_t PSP_Offset);
 
 //Calling the PendSV interrupt
 void osYield(void);
@@ -37,7 +37,13 @@ void SysTick_Handler(void);
 //Idle thread when no other thread is running
 void osIdleThread(void* args);
 
-//SVC handler function
-void SVC_Handler_Main(uint32_t *svc_args);
+//Create a mutex
+int osCreateMutex(void);
+
+//Acquire the mutex
+bool osAcquireMutex(int thread_index, int mutex_index);
+
+//Release the mutex
+void osReleaseMutex(int thread_index, int mutex_index);
 
 #endif
