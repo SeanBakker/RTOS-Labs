@@ -191,7 +191,7 @@ int osCreateMutex(void)
 //Acquire the mutex
 bool osAcquireMutex(int thread_index, int mutex_index)
 {
-	bool acquiredMutex = false;
+	bool acquiredMutex = false; //Boolean for whether the mutex is acquired or not
 	
 	//Only acquire the mutex if it is available or the thread already owns the mutex
 	if(osMutexes[mutex_index].available || osMutexes[mutex_index].threadOwns == thread_index)
