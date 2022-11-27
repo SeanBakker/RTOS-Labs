@@ -52,6 +52,9 @@
 //Define the interrupt numbers for SVC
 #define YIELD_SWITCH 0
 
+//Define an empty index for when no data is stored in that location of an array
+#define EMPTY_INDEX -1
+
 //Define thread struct for each thread stored
 typedef struct thread_struct
 {
