@@ -7,6 +7,9 @@
 //Include header file for _kernelCore
 #include "_kernelCore.h"
 
+//Include header file for _mutexAPI
+#include "_mutexAPI.h"
+
 //Variables for threads to test that they are working
 int x = 0;
 int y = 0;
