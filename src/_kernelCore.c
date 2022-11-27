@@ -237,7 +237,6 @@ void osReleaseMutex(int thread_index, int mutex_index)
 		if(osMutexes[mutex_index].waitingQueue[0] != -1)
 		{
 			//Set the next thread in the waiting queue to acquire the mutex
-			//The waitTime is set to -1 since we know the mutex is available anyways
 			osAcquireMutex(osMutexes[mutex_index].waitingQueue[0], mutex_index);
 			
 			//Move the thread back into the OS's thread waiting pool
