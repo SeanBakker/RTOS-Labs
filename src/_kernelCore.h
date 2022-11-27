@@ -37,13 +37,4 @@ void SysTick_Handler(void);
 //Idle thread when no other thread is running
 void osIdleThread(void* args);
 
-//Create a mutex
-int osCreateMutex(void);
-
-//Acquire the mutex
-bool osAcquireMutex(int thread_index, int mutex_index);
-
-//Release the mutex
-void osReleaseMutex(int thread_index, int mutex_index);
-
 #endif
