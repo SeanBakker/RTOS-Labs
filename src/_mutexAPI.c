@@ -4,8 +4,8 @@
  *----------------------------------------------------------------------------
 */
 
-//Include header file for _kernelCore, _threadsCore, and _mutexAPI
-#include "_kernelCore.h" 
+//Include header file for _kernelCore, _threadsCore, and _mutexAPI 
+#include "_kernelCore.h"
 #include "_threadsCore.h"
 #include "_mutexAPI.h"
 
