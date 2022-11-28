@@ -1,6 +1,12 @@
 //This file sets up the UART
 #include "uart.h"
 
+//This file contains relevant pin and other settings 
+#include <LPC17xx.h>
+
+//This file is for printf and other IO functions
+#include "stdio.h"
+
 //Include header file for _threadsCore
 #include "_threadsCore.h"
 
@@ -120,7 +126,67 @@ void thread2(void* args)
 		{
 			printf("Thread 2, x mod 47 is: %d\n", x % 47);
 			
-			//Set the LEDs
+			//Set the LEDs to x%47
+			//Convert x from decimal to unsigned 8-bit binary
+			unsigned int binary_x = (uint8_t)(x % 47);
+			
+			/*
+			//Check each bit for each LED
+			for(int i = 0; i <8; i++)
+			{
+				//Check the bit of the integer x
+				if((binary_x >> i) & 1)
+				{
+					//Set the LED
+					if (i < 3)
+					{
+						//Set the first 3 LEDs
+						LPC_GPIO1->FIOSET |= 1<<(28 + i);
+					}
+					else 
+					{
+						//Set the last 5 LEDs
+						LPC_GPIO2->FIOSET |= 1<<(2 + i);
+					}
+				}
+				else 
+				{
+					//Clear the LED
+					if (i < 3)
+					{
+						//Clear the first 3 LEDs
+						LPC_GPIO1->FIOCLR |= 1<<(28 + i);
+					}
+					else 
+					{
+						//Clear the last 5 LEDs
+						LPC_GPIO2->FIOCLR |= 1<<(2 + i);
+					}
+				}
+			}
+			*/
+			
+			
+			unsigned int led = 1;
+			
+			for (int i = 0; i <8; i++)
+			{
+				if ((binary_x & led) == led && i == 0) {
+					LPC_GPIO1->FIOSET |= 1<<28;
+				}
+				else if ((binary_x & led) == led && i == 1) {
+					LPC_GPIO1->FIOSET |= 1<<29;
+				}
+				else if ((binary_x & led) == led && i == 2) {
+					LPC_GPIO1->FIOSET |= 1<<31;
+				}
+				else if ((binary_x & led) == led && i > 2) {
+					unsigned int tmp = i-1;
+					LPC_GPIO2->FIOSET |= 1<<tmp;
+				}
+				binary_x >>= 1;
+			}
+			
 			
 			
 			//Release the mutexes
@@ -143,8 +209,15 @@ void thread3(void* args)
 		{
 			printf("Thread 3\n");
 			
-			//Set the LEDs
-			
+			//Set the LEDs to 0x71 - 01110001 in binary
+			LPC_GPIO1->FIOCLR |= 1<<28;
+			LPC_GPIO1->FIOSET |= 1<<29;
+			LPC_GPIO1->FIOSET |= 1<<31;	
+			LPC_GPIO2->FIOSET |= 1<<2;	
+			LPC_GPIO2->FIOCLR |= 1<<3;
+			LPC_GPIO2->FIOCLR |= 1<<4;
+			LPC_GPIO2->FIOCLR |= 1<<5; 
+			LPC_GPIO2->FIOSET |= 1<<6;
 			
 			//Release the mutexes
 			osReleaseMutex(thread_3, mutex_2);
@@ -180,6 +253,16 @@ int main(void)
 	//Test case #1 & #2
 	mutex_1 = osCreateMutex();
 	mutex_2 = osCreateMutex();
+	
+	//Test Case #2 - Setup the LEDs
+	LPC_GPIO1->FIODIR |= 1<<28;
+	LPC_GPIO1->FIODIR |= 1<<29;
+	LPC_GPIO1->FIODIR |= 1<<31;	
+	LPC_GPIO2->FIODIR |= 1<<2;	
+	LPC_GPIO2->FIODIR |= 1<<3;
+	LPC_GPIO2->FIODIR |= 1<<4;
+	LPC_GPIO2->FIODIR |= 1<<5; 
+	LPC_GPIO2->FIODIR |= 1<<6;
 	
 	//Start the kernel
 	kernel_start();
