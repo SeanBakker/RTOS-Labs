@@ -121,73 +121,61 @@ void thread2(void* args)
 	//Infinite loop for the thread
 	while (1)
 	{
+		bool acquireMutex1 = osAcquireMutex(thread_2, mutex_1);
+		bool acquireMutex2 = osAcquireMutex(thread_2, mutex_2);
+		
 		//Acquire both mutexes for the global variable and the LEDs
-		if(osAcquireMutex(thread_2, mutex_1) && osAcquireMutex(thread_2, mutex_2))
+		if(acquireMutex1 && acquireMutex2)
 		{
 			printf("Thread 2, x mod 47 is: %d\n", x % 47);
 			
 			//Set the LEDs to x%47
 			//Convert x from decimal to unsigned 8-bit binary
-			unsigned int binary_x = (uint8_t)(x % 47);
+			unsigned int binary_x = (x % 47);
 			
-			/*
 			//Check each bit for each LED
-			for(int i = 0; i <8; i++)
+			for(int i = 0; i < 8; i++)
 			{
 				//Check the bit of the integer x
 				if((binary_x >> i) & 1)
 				{
 					//Set the LED
-					if (i < 3)
+					if (i < 2)
 					{
-						//Set the first 3 LEDs
+						//Set the first 2 LEDs
 						LPC_GPIO1->FIOSET |= 1<<(28 + i);
+					}
+					else if (i == 2)
+					{
+						//Set the third LED
+						LPC_GPIO1->FIOSET |= 1<<(31);
 					}
 					else 
 					{
 						//Set the last 5 LEDs
-						LPC_GPIO2->FIOSET |= 1<<(2 + i);
+						LPC_GPIO2->FIOSET |= 1<<(i - 1);
 					}
 				}
 				else 
 				{
 					//Clear the LED
-					if (i < 3)
+					if (i < 2)
 					{
-						//Clear the first 3 LEDs
+						//Clear the first 2 LEDs
 						LPC_GPIO1->FIOCLR |= 1<<(28 + i);
+					}
+					else if (i == 2)
+					{
+						//Clear the third LED
+						LPC_GPIO1->FIOCLR |= 1<<(31);
 					}
 					else 
 					{
 						//Clear the last 5 LEDs
-						LPC_GPIO2->FIOCLR |= 1<<(2 + i);
+						LPC_GPIO2->FIOCLR |= 1<<(i - 1);
 					}
 				}
 			}
-			*/
-			
-			
-			unsigned int led = 1;
-			
-			for (int i = 0; i <8; i++)
-			{
-				if ((binary_x & led) == led && i == 0) {
-					LPC_GPIO1->FIOSET |= 1<<28;
-				}
-				else if ((binary_x & led) == led && i == 1) {
-					LPC_GPIO1->FIOSET |= 1<<29;
-				}
-				else if ((binary_x & led) == led && i == 2) {
-					LPC_GPIO1->FIOSET |= 1<<31;
-				}
-				else if ((binary_x & led) == led && i > 2) {
-					unsigned int tmp = i-1;
-					LPC_GPIO2->FIOSET |= 1<<tmp;
-				}
-				binary_x >>= 1;
-			}
-			
-			
 			
 			//Release the mutexes
 			osReleaseMutex(thread_2, mutex_1);
@@ -226,7 +214,6 @@ void thread3(void* args)
 		osYield(); //Yield  
 	}
 }
-
 
 //This is C. The expected function heading is int main(void)
 int main(void) 

@@ -47,7 +47,7 @@
 #define BLOCKED 4 //Thread is blocked and cannot be scheduled
 
 //Timeslice for how long a thread will run (5ms)
-#define TIMESLICE 5 
+#define TIMESLICE 5
 
 //Define the interrupt numbers for SVC
 #define YIELD_SWITCH 0
