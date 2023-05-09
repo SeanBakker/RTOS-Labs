@@ -1,2 +1,2 @@
-# RTOS_241_Labs
-Repo for 241 Labs using RTOS
+# RTOS Labs
+Repository for MTE-241 Labs for the design of a RTOS
